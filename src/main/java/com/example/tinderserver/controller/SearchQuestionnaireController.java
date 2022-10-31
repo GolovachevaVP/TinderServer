@@ -17,8 +17,8 @@ public class SearchQuestionnaireController {
     private final SearchQuestionnaireService searchQuestionnaireService;
 
     @GetMapping
-    public QuestionnaireDto getSearchQuestionnaire(Long chatId, HttpServletResponse response) throws IOException {
-        return searchQuestionnaireService.getQuestionnaire(chatId, response);
+    public void getSearchQuestionnaire(Long chatId, HttpServletResponse response) throws IOException {
+        searchQuestionnaireService.getQuestionnaire(chatId, response);
     }
 
 }

@@ -1,8 +1,10 @@
 package com.example.tinderserver.service;
 
+import com.example.tinderserver.dto.ChatIdDescriptionDto;
 import com.example.tinderserver.dto.QuestionnaireDto;
 import com.example.tinderserver.repository.QuestionnaireRepository;
 import com.example.tinderserver.repository.TextToImageRepository;
+import feign.Response;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.Resource;
@@ -22,27 +24,33 @@ public class SearchQuestionnaireService {
     private final TextToImageRepository textToImageRepository;
     private final QuestionnaireRepository questionnaireRepository;
 
-    public QuestionnaireDto getQuestionnaire(Long chatId, HttpServletResponse response) throws IOException {
-        response.setContentType("image/png");
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=questionnaire.png");
-        response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
-
+    public void getQuestionnaire(Long chatId, HttpServletResponse response) throws IOException {
         QuestionnaireDto questionnaireDto = questionnaireRepository.getSearchQuestionnaire(chatId);
-        InputStream inputStream = textToImageRepository.textToImage(
-                        chatId,
-                        questionnaireDto.getDescription()
-                )
-                .body()
-                .asInputStream();
+        ChatIdDescriptionDto chatIdDescriptionDto = new ChatIdDescriptionDto(
+                questionnaireDto.getChatId(),
+                questionnaireDto.getDescription()
+        );
 
-        BufferedOutputStream outStream = new BufferedOutputStream (response.getOutputStream());
+        Response downloadFileResponse = textToImageRepository.textToImage(chatIdDescriptionDto);
 
-        byte[] buffer = new byte[8 * 1024];
-        int bytesRead;
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-            outStream.write(buffer, 0, bytesRead);
-        }
-        outStream.flush();
-        return questionnaireDto;
+        setHeaderFromFeignResponse(HttpHeaders.CONTENT_TYPE, response, downloadFileResponse);
+        setHeaderFromFeignResponse(HttpHeaders.CONTENT_DISPOSITION, response, downloadFileResponse);
+        IOUtils.copy(downloadFileResponse.body().asInputStream(), response.getOutputStream());
+    }
+
+    private void setHeaderFromFeignResponse(
+            String httpHeaderType,
+            HttpServletResponse servletResponse,
+            Response feignResponse
+    ) {
+        servletResponse.setHeader(
+                httpHeaderType,
+                feignResponse.headers()
+                        .get(httpHeaderType)
+                        .stream()
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException("Unknown " + httpHeaderType))
+        );
+
     }
 }
