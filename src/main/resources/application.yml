@@ -1,1 +1,5 @@
+server:
+  port: 8085
+endpoints:
+  text-to-image-service: http://localhost:8086/
 

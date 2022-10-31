@@ -1,4 +1,4 @@
-package ru.liga.intership.prerevolutionarytindertgbotclient.telegrambot.enums;
+package com.example.tinderserver.enums;
 
 import lombok.Getter;
 
